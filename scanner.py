@@ -36,7 +36,7 @@ def listen_to_scanner():
     # Folder and File creatation
     check_folder_exists(FOLDER_PATH)
     current_date = datetime.now().strftime('%Y-%m-%d')
-    csv_file_name = f"{FOLDER_PATH}{config.name}_{current_date}.csv"
+    csv_file_name = f"{FOLDER_PATH}{current_date}_{config.name}.csv"
     check_csv_exists(csv_file_name, config.header)
 
     while True:

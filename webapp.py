@@ -15,7 +15,7 @@ app = Flask(__name__)
 # File to read the logged data
 # LOG_FILE = "barcode_scans.json"
 FOLDER_PATH = "data/"
-FILE_PATH = f"{FOLDER_PATH}{config.name}_{datetime.now().strftime('%Y-%m-%d')}.csv"
+FILE_PATH = f"{FOLDER_PATH}{datetime.now().strftime('%Y-%m-%d')}_{config.name}.csv"
 TARGET = config.target
 LINE_NAME = config.name  # Default line name
 RESET_SCRIPT_ACTIVE = True  # Track reset script status
