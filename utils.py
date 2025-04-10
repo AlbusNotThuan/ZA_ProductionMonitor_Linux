@@ -17,6 +17,15 @@ def load_config():
         data = yaml.safe_load(file)
     return ConfigObject(data)
 
+def modify_config(key, value):
+    with open('config.yaml', 'r') as file:
+        config = yaml.safe_load(file)
+
+    config[f'{key}'] = value
+
+    with open('config.yaml', 'w') as file:
+        yaml.dump(config, file, default_flow_style=False)
+
 # Ensure the folder exists
 def check_folder_exists(folder_path):
     if not os.path.exists(folder_path):
@@ -28,6 +37,3 @@ def check_csv_exists(csv_path, headers):
         with open(csv_path, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(headers)
-
-
-

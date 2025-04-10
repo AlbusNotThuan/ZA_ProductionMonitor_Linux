@@ -1,2 +1,6 @@
-name: ProductionLine2
-header: ['ProductionLineName', 'Time Scanned', "Barcode"]
+header:
+- ProductionLineName
+- Time Scanned
+- Barcode
+name: ProductionLineCA
+target: 500

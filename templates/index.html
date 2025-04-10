@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Monitor</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 200px);
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .grid-item {
+            background-color: #f0f0f0;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+        }
+        .number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .label {
+            font-size: 16px;
+            color: #666;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-bottom: 10px;
+        }
+        h3 {
+            margin-bottom: 20px;
+        }
+        .admin-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .admin-button:hover {
+            background-color: #1976D2;
+        }
+    </style>
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const date = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            document.getElementById('clock').textContent = `${hours}:${minutes}`;
+            document.getElementById('date').textContent = date;
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/data');
+                const data = await response.json();
+                
+                // Update grid items with correct data structure
+                document.getElementById('finished').textContent = data.count;
+                document.getElementById('progress').textContent = data.percentage + '%';
+                document.getElementById('target').textContent = data.target;
+                document.getElementById('remaining').textContent = Math.max(0, data.target - data.count);
+                document.getElementById('line-name').textContent = data.line_name;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Update clock and date every second
+        setInterval(updateDateTime, 1000);
+        // Refresh data every 5 seconds
+        setInterval(fetchData, 1000);
+        
+        // Initial updates
+        window.onload = () => {
+            updateDateTime();
+            fetchData();
+        };
+    </script>
+</head>
+<body>
+    <h1 id="line-name">{{ line_name }}</h1>
+    <h2 id="clock"></h2>
+    <h4 id="date"></h4>
+    <div class="grid-container">
+        <div class="grid-item">
+            <div class="number" id="finished">0</div>
+            <div class="label">Finished Goods</div>
+        </div>
+        <div class="grid-item">
+            <div class="number" id="progress">0%</div>
+            <div class="label">Day Progress</div>
+        </div>
+        <div class="grid-item">
+            <div class="number" id="target">{{ target }}</div>
+            <div class="label">Day Target</div>
+        </div>
+        <div class="grid-item">
+            <div class="number" id="remaining">{{ target }}</div>
+            <div class="label">Remaining</div>
+        </div>
+    </div>
+    <a href="/admin">
+        <button class="admin-button">Admin Panel</button>
+    </a>
+</body>
+</html>

@@ -3,7 +3,7 @@ import time
 import csv
 import pandas as pd
 from datetime import datetime
-from utils import load_config, check_csv_exists, check_folder_exists
+from utils import load_config, check_csv_exists, check_folder_exists, modify_config
 
 FOLDER_PATH = "data/"
 config = load_config()
@@ -56,7 +56,7 @@ def listen_to_scanner():
                 
                 barcode = ''  # Reset barcode after processing
 
-        time.sleep(0.1)  # Avoid busy-waiting
+        time.sleep(0.05)  # Avoid busy-waiting
 
 if __name__ == "__main__":
     listen_to_scanner()

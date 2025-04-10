@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .section {
+            background-color: white;
+            margin: 20px 0;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 300px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .home-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+        }
+        .warning {
+            color: red;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Panel</h1>
+    
+    <div class="section">
+        <form method="POST" action="/admin" onsubmit="return confirmChanges()">
+            <p>Current Line Name: {{ line_name }}</p>
+            <label for="line_name">Update Line Name:</label>
+            <input type="text" id="line_name" name="line_name" required><br><br>
+            
+            <p>Current Target: {{ target }}</p>
+            <label for="target">Update Target:</label>
+            <input type="number" id="target" name="target" required><br><br>
+            
+            <button type="submit">Update Settings</button>
+        </form>
+
+        <p class="warning" id="warning" style="display: none;">
+            Warning: This change will reset the whole process.
+        </p>
+    </div>
+
+    <script>
+        // Show warning when the form is submitted
+        function confirmChanges() {
+            const lineName = document.getElementById('line_name').value;
+            const target = document.getElementById('target').value;
+
+            const confirmMessage = "Changing the Line Name and/or Target will reset the whole process. Do you want to continue?";
+            
+            if (confirm(confirmMessage)) {
+                // Show the warning message
+                document.getElementById('warning').style.display = 'block';
+                return true; // Proceed with the form submission
+            } else {
+                return false; // Prevent form submission
+            }
+        }
+
+        // Initialize form with current values
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentLineName = '{{ line_name }}';
+            const currentTarget = '{{ target }}';
+            
+            document.getElementById('line_name').value = currentLineName;
+            document.getElementById('target').value = currentTarget;
+        });
+    </script>
+
+    <a href="/" class="home-button">
+        <button>Return to Monitor</button>
+    </a>
+</body>
+</html>
