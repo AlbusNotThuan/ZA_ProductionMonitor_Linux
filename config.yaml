@@ -2,5 +2,5 @@ header:
 - ProductionLineName
 - Time Scanned
 - Barcode
-name: ProductionLine13
-target: 500
+name: ProductionLine1
+target: 120
