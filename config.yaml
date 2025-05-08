@@ -4,3 +4,13 @@ header:
 - Barcode
 name: ProductionLine1
 target: 120
+time_segments:
+- end: 08:00
+  start: 00:00
+  target: 23
+- end: '16:00'
+  start: 08:00
+  target: 17
+- end: '23:59'
+  start: '16:01'
+  target: 45

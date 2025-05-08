@@ -30,16 +30,40 @@ def append_to_csv(filepath, data):
         writer = csv.writer(file)
         writer.writerow(row)
 
-def listen_to_scanner():
-    barcode = ''
 
-    # Folder and File creatation
-    check_folder_exists(FOLDER_PATH)
+def get_current_csv_filename():
+    """Get the CSV filename for the current date and ensure it exists."""
     current_date = datetime.now().strftime('%Y-%m-%d')
     csv_file_name = f"{FOLDER_PATH}{current_date}_{config.name}.csv"
+    
+    # Make sure the file exists with correct headers
+    check_folder_exists(FOLDER_PATH)
     check_csv_exists(csv_file_name, config.header)
+    
+    return csv_file_name
+
+
+def listen_to_scanner():
+    barcode = ''
+    last_date = datetime.now().strftime('%Y-%m-%d')
+    
+    # Initial file setup
+    csv_file_name = get_current_csv_filename()
+    print(f"Scanner using file: {csv_file_name}")
 
     while True:
+        # Check if the date has changed
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        if current_date != last_date:
+            print(f"Date changed from {last_date} to {current_date}. Updating file.")
+            csv_file_name = get_current_csv_filename()
+            last_date = current_date
+            print(f"Now using file: {csv_file_name}")
+            
+            # Reload config in case it was modified
+            global config
+            config = load_config()
+
         # Read data from the barcode scanner
         data = ser.read()  # Read one byte at a time
 
@@ -57,6 +81,7 @@ def listen_to_scanner():
                 barcode = ''  # Reset barcode after processing
 
         time.sleep(0.05)  # Avoid busy-waiting
+
 
 if __name__ == "__main__":
     listen_to_scanner()

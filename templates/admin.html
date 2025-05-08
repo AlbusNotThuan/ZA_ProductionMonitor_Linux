@@ -1,115 +1,121 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-        }
-        .section {
-            background-color: white;
-            margin: 20px 0;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 500px;
-        }
-        button {
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #1976D2;
-        }
-        input {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            width: 100%;
-            max-width: 300px;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-        }
-        .home-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-        }
-        .warning {
-            color: red;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <h1>Admin Panel</h1>
-    
-    <div class="section">
-        <form method="POST" action="/admin" onsubmit="return confirmChanges()">
-            <p>Current Line Name: {{ line_name }}</p>
-            <label for="line_name">Update Line Name:</label>
-            <input type="text" id="line_name" name="line_name" required><br><br>
-            
-            <p>Current Target: {{ target }}</p>
-            <label for="target">Update Target:</label>
-            <input type="number" id="target" name="target" required><br><br>
-            
-            <button type="submit">Update Settings</button>
-        </form>
+{% extends "base.html" %}
+{% block title %}Admin Panel - {{ line_name }}{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Admin Panel for {{ line_name }}</h1>
 
-        <p class="warning" id="warning" style="display: none;">
-            Warning: This change will reset the whole process.
-        </p>
-    </div>
+    <h2>Settings</h2>
+    <form method="POST" action="{{ url_for('admin') }}" id="settingsForm">
+        <div class="form-group">
+            <label for="line_name">Line Name:</label>
+            <input type="text" id="line_name" name="line_name" value="{{ line_name }}" required>
+        </div>
+        <div class="form-group">
+            <label for="target">Overall Day Target:</label>
+            <input type="number" id="target" name="target" value="{{ target }}" min="0" required>
+        </div>
+        
+        <hr>
+        <h3>Time Segments and Targets</h3>
+        <div id="timeSegments">
+            {% for segment in time_segments %}
+            <div class="segment-row">
+                <input type="time" name="segment_start_{{ loop.index0 }}" value="{{ segment.start }}" required>
+                <span>to</span>
+                <input type="time" name="segment_end_{{ loop.index0 }}" value="{{ segment.end }}" required>
+                <input type="number" name="segment_target_{{ loop.index0 }}" value="{{ segment.target }}" min="0" required placeholder="Target">
+                <button type="button" class="remove-segment">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" id="addSegment" class="button secondary">+ Add Time Segment</button>
+        
+        <div class="button-group">
+            <button type="submit" class="button primary">Save Settings</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
 
-    <script>
-        // Show warning when the form is submitted
-        function confirmChanges() {
-            const lineName = document.getElementById('line_name').value;
-            const target = document.getElementById('target').value;
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timeSegments = document.getElementById('timeSegments');
+    const addButton = document.getElementById('addSegment');
 
-            const confirmMessage = "Changing the Line Name and/or Target will reset the whole process. Do you want to continue?";
-            
-            if (confirm(confirmMessage)) {
-                // Show the warning message
-                document.getElementById('warning').style.display = 'block';
-                return true; // Proceed with the form submission
+    // Add new segment
+    addButton.addEventListener('click', function() {
+        const index = timeSegments.children.length;
+        const newSegment = document.createElement('div');
+        newSegment.className = 'segment-row';
+        newSegment.innerHTML = `
+            <input type="time" name="segment_start_${index}" required>
+            <span>to</span>
+            <input type="time" name="segment_end_${index}" required>
+            <input type="number" name="segment_target_${index}" min="0" required placeholder="Target">
+            <button type="button" class="remove-segment">×</button>
+        `;
+        timeSegments.appendChild(newSegment);
+    });
+
+    // Remove segment
+    timeSegments.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-segment')) {
+            if (timeSegments.children.length > 1) {
+                e.target.parentElement.remove();
+                reindexSegments();
             } else {
-                return false; // Prevent form submission
+                alert('At least one time segment is required.');
             }
         }
+    });
 
-        // Initialize form with current values
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentLineName = '{{ line_name }}';
-            const currentTarget = '{{ target }}';
-            
-            document.getElementById('line_name').value = currentLineName;
-            document.getElementById('target').value = currentTarget;
+    // Reindex segments after removal
+    function reindexSegments() {
+        Array.from(timeSegments.children).forEach((segment, index) => {
+            segment.querySelectorAll('input').forEach(input => {
+                const baseName = input.name.split('_').slice(0, -1).join('_');
+                input.name = `${baseName}_${index}`;
+            });
         });
-    </script>
+    }
 
-    <a href="/" class="home-button">
-        <button>Return to Monitor</button>
-    </a>
-</body>
-</html>
+    // Form validation
+    document.getElementById('settingsForm').addEventListener('submit', function(e) {
+        const segments = Array.from(timeSegments.children);
+        
+        // Sort segments by start time for validation
+        segments.sort((a, b) => {
+            const startA = a.querySelector(`input[name^="segment_start"]`).value;
+            const startB = b.querySelector(`input[name^="segment_start"]`).value;
+            return startA.localeCompare(startB);
+        });
+
+        // Validate each segment
+        for (let i = 0; i < segments.length; i++) {
+            const start = segments[i].querySelector(`input[name^="segment_start"]`).value;
+            const end = segments[i].querySelector(`input[name^="segment_end"]`).value;
+            
+            // Check if end time is after start time in the same segment
+            if (start >= end) {
+                alert('End time must be after start time in each segment');
+                e.preventDefault();
+                return;
+            }
+
+            // Check if this segment overlaps with the next segment
+            if (i < segments.length - 1) {
+                const nextStart = segments[i + 1].querySelector(`input[name^="segment_start"]`).value;
+                if (end > nextStart) {
+                    alert('Time segments cannot overlap. Each segment\'s end time must be less than or equal to the next segment\'s start time.');
+                    e.preventDefault();
+                    return;
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block head_extra %}{% endblock %}

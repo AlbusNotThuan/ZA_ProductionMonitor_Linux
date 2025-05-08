@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Time Series Visual - {{ line_name }}{% endblock %}
+{% block head_extra %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
+        .header-nav { width: 100%; background-color: #333; padding: 10px 0; margin-bottom:20px; text-align:center;}
+        .header-nav a { color: white; margin: 0 15px; text-decoration: none; font-size: 1.1em; }
+        .header-nav a:hover { text-decoration: underline; }
+        h1 { color: #333; margin-top: 20px; }
+        .chart-container {
+            width: 90%;
+            max-width: 1200px;
+            height: 600px; /* Fixed height for the container */
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            position: relative; /* Required for Chart.js responsive sizing */
+        }
+        .info-text {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- <div class="header-nav">
+        <a href="{{ url_for('index') }}">Dashboard</a>
+        <a href="{{ url_for('admin') }}">Admin Panel</a>
+        <a href="{{ url_for('rawdata') }}">Raw Data</a>
+    </div> -->
+    <h1>Production Rate for {{ line_name }}</h1>
+    <p class="info-text">Data for: {{ initial_data.labels[0].split('-')[0] if initial_data and initial_data.labels else "Today" }}</p>
+    <p class="info-text">Updates automatically</p>
+    <div class="chart-container">
+        <canvas id="productionChart" style="width: 100%; height: 100%;"></canvas>
+    </div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <script>
+        let productionChart = null;
+        const initialChartData = JSON.parse('{{ initial_data | tojson | safe }}');
+
+        function renderChart(chartData) {
+            const ctx = document.getElementById('productionChart').getContext('2d');
+            if (productionChart) {
+                productionChart.destroy();
+            }
+
+            const maxValue = Math.max(
+                ...chartData.actual_counts,
+                ...chartData.target_counts
+            );
+
+            productionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Actual Production',
+                            data: chartData.actual_counts,
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            order: 2
+                        },
+                        {
+                            label: 'Target',
+                            data: chartData.target_counts,
+                            type: 'line',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            fill: false,
+                            tension: 0.1,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: maxValue * 1.1,
+                            title: {
+                                display: true,
+                                text: 'Count',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `Production Rate - ${chartData.line_name}`,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 30
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 750,
+                        easing: 'easeInOutQuart'
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    elements: {
+                        bar: {
+                            borderRadius: 4
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeVisualEventSource() {
+            const eventSource = new EventSource("/visual-stream");
+
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    document.querySelector('h1').textContent = `Production Rate for ${data.line_name}`;
+                    renderChart(data);
+                } catch (error) {
+                    console.error('Error processing visual message data:', error, 'Raw data:', event.data);
+                }
+            };
+
+            eventSource.onerror = function(err) {
+                console.error("Visual EventSource failed:", err);
+                eventSource.close();
+                setTimeout(initializeVisualEventSource, 5000); 
+            };
+
+            window.addEventListener('beforeunload', () => {
+                if (eventSource) {
+                    eventSource.close();
+                }
+            });
+        }
+
+        window.onload = () => {
+            if (initialChartData && initialChartData.labels && initialChartData.labels.length > 0) {
+                renderChart(initialChartData);
+            } else {
+                console.warn("Initial chart data is missing or incomplete. Waiting for SSE.");
+            }
+            initializeVisualEventSource();
+        };
+    </script>
+{% endblock %}
