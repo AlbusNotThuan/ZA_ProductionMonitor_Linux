@@ -5,12 +5,30 @@ header:
 name: ProductionLine1
 target: 120
 time_segments:
-- end: 08:00
-  start: 00:00
-  target: 23
-- end: '16:00'
+- end: 09:00
   start: 08:00
-  target: 17
-- end: '23:59'
-  start: '16:01'
-  target: 45
+  target: 21
+- end: '10:00'
+  start: 09:00
+  target: 21
+- end: '11:00'
+  start: '10:00'
+  target: 21
+- end: '12:00'
+  start: '11:00'
+  target: 21
+- end: '13:00'
+  start: '12:30'
+  target: 10
+- end: '14:00'
+  start: '13:00'
+  target: 21
+- end: '15:00'
+  start: '14:00'
+  target: 21
+- end: '16:00'
+  start: '15:00'
+  target: 21
+- end: '16:30'
+  start: '16:00'
+  target: 10

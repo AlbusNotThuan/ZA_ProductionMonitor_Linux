@@ -16,13 +16,14 @@
         </div>
         
         <hr>
-        <h3>Time Segments and Targets</h3>
+        <h3>Time Segments and Targets (24-hour format)</h3>
+        <!-- <p><small>Note: Time input display (e.g., AM/PM or 24-hour) may vary by browser/OS, but values are processed in 24-hour format.</small></p> -->
         <div id="timeSegments">
             {% for segment in time_segments %}
             <div class="segment-row">
-                <input type="time" name="segment_start_{{ loop.index0 }}" value="{{ segment.start }}" required>
+                <input type="time" name="segment_start_{{ loop.index0 }}" value="{{ segment.start }}" required step="60" data-force-24h="true">
                 <span>to</span>
-                <input type="time" name="segment_end_{{ loop.index0 }}" value="{{ segment.end }}" required>
+                <input type="time" name="segment_end_{{ loop.index0 }}" value="{{ segment.end }}" required step="60" data-force-24h="true">
                 <input type="number" name="segment_target_{{ loop.index0 }}" value="{{ segment.target }}" min="0" required placeholder="Target">
                 <button type="button" class="remove-segment">×</button>
             </div>
@@ -40,6 +41,15 @@
 {% block scripts_extra %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Set all time inputs to use 24 hour format
+    document.querySelectorAll('input[type="time"]').forEach(input => {
+        input.style.width = '120px'; // Example styling
+        // The HTML5 time input's value is inherently in 24-hour format (HH:mm).
+        // The display format (12h/24h) is typically controlled by browser/OS locale.
+        // The data-force-24h attribute is custom and doesn't natively change behavior
+        // unless specific JavaScript is written to interpret it.
+    });
+
     const timeSegments = document.getElementById('timeSegments');
     const addButton = document.getElementById('addSegment');
 
@@ -49,13 +59,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const newSegment = document.createElement('div');
         newSegment.className = 'segment-row';
         newSegment.innerHTML = `
-            <input type="time" name="segment_start_${index}" required>
+            <input type="time" name="segment_start_${index}" required step="60" data-force-24h="true">
             <span>to</span>
-            <input type="time" name="segment_end_${index}" required>
+            <input type="time" name="segment_end_${index}" required step="60" data-force-24h="true">
             <input type="number" name="segment_target_${index}" min="0" required placeholder="Target">
             <button type="button" class="remove-segment">×</button>
         `;
         timeSegments.appendChild(newSegment);
+        // Apply any specific styling or initialization to new time inputs if needed
+        newSegment.querySelectorAll('input[type="time"]').forEach(input => {
+            input.style.width = '120px'; // Consistent styling
+        });
     });
 
     // Remove segment
@@ -74,7 +88,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function reindexSegments() {
         Array.from(timeSegments.children).forEach((segment, index) => {
             segment.querySelectorAll('input').forEach(input => {
-                const baseName = input.name.split('_').slice(0, -1).join('_');
+                const nameParts = input.name.split('_');
+                const baseName = nameParts.slice(0, -1).join('_'); // e.g., "segment_start" or "segment_target"
                 input.name = `${baseName}_${index}`;
             });
         });
@@ -84,35 +99,58 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('settingsForm').addEventListener('submit', function(e) {
         const segments = Array.from(timeSegments.children);
         
+        // Create an array of objects for easier sorting and access
+        let segmentData = segments.map(segmentDiv => {
+            return {
+                element: segmentDiv,
+                start: segmentDiv.querySelector(`input[name^="segment_start"]`).value,
+                end: segmentDiv.querySelector(`input[name^="segment_end"]`).value
+            };
+        });
+
         // Sort segments by start time for validation
-        segments.sort((a, b) => {
-            const startA = a.querySelector(`input[name^="segment_start"]`).value;
-            const startB = b.querySelector(`input[name^="segment_start"]`).value;
-            return startA.localeCompare(startB);
+        segmentData.sort((a, b) => {
+            return a.start.localeCompare(b.start);
         });
 
         // Validate each segment
-        for (let i = 0; i < segments.length; i++) {
-            const start = segments[i].querySelector(`input[name^="segment_start"]`).value;
-            const end = segments[i].querySelector(`input[name^="segment_end"]`).value;
+        for (let i = 0; i < segmentData.length; i++) {
+            const currentSegment = segmentData[i];
             
             // Check if end time is after start time in the same segment
-            if (start >= end) {
-                alert('End time must be after start time in each segment');
+            if (currentSegment.start >= currentSegment.end) {
+                alert('End time must be after start time in each segment.');
                 e.preventDefault();
+                // Highlight the problematic segment (optional)
+                currentSegment.element.style.outline = "2px solid red";
+                // Focus the first problematic input
+                currentSegment.element.querySelector(`input[name^="segment_start"]`).focus();
                 return;
+            } else {
+                 currentSegment.element.style.outline = ""; // Clear outline if valid
             }
 
             // Check if this segment overlaps with the next segment
-            if (i < segments.length - 1) {
-                const nextStart = segments[i + 1].querySelector(`input[name^="segment_start"]`).value;
-                if (end > nextStart) {
+            if (i < segmentData.length - 1) {
+                const nextSegment = segmentData[i+1];
+                if (currentSegment.end > nextSegment.start) {
                     alert('Time segments cannot overlap. Each segment\'s end time must be less than or equal to the next segment\'s start time.');
                     e.preventDefault();
+                    // Highlight the problematic segments (optional)
+                    currentSegment.element.style.outline = "2px solid red";
+                    nextSegment.element.style.outline = "2px solid red";
+                    currentSegment.element.querySelector(`input[name^="segment_end"]`).focus();
                     return;
+                } else {
+                    nextSegment.element.style.outline = ""; // Clear outline if valid
                 }
             }
         }
+        // If validation passes, reorder the actual DOM elements based on sorted segmentData
+        // This ensures that if the user entered them out of order but they are valid,
+        // they get reordered visually and for submission indexing.
+        segmentData.forEach(data => timeSegments.appendChild(data.element));
+        reindexSegments(); // Reindex after potential reordering
     });
 });
 </script>

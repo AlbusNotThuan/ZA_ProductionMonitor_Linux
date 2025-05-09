@@ -20,19 +20,19 @@ TIME_SEGMENTS = getattr(config, 'time_segments', [
 ])
 
 
-def get_dynamic_file_path():
+def get_current_file_path():
     """Determines the current CSV file path based on date and LINE_NAME."""
     return f"{FOLDER_PATH}{datetime.now().strftime('%Y-%m-%d')}_{LINE_NAME}.csv"
 
 @app.route("/")
 def index():
     # Log the expected file path at the time of serving index.html for debugging
-    print(f"Serving index.html, expecting data from: {get_dynamic_file_path()}")
+    print(f"Serving index.html, expecting data from: {get_current_file_path()}")
     return render_template("index.html", target=TARGET, line_name=LINE_NAME)
 
 def preprocess_data():
     """Reads and processes data from the current CSV file."""
-    current_file = get_dynamic_file_path()
+    current_file = get_current_file_path()
     processed_data_rows = []
     
     if os.path.exists(current_file):
@@ -86,7 +86,7 @@ def stream():
             yield f"data: {json.dumps(initial_data)}\n\n"
             
             # Set last_mtime based on the file used for initial data
-            _initial_file_path = get_dynamic_file_path()
+            _initial_file_path = get_current_file_path()
             if os.path.exists(_initial_file_path):
                 last_mtime = os.path.getmtime(_initial_file_path)
             else:
@@ -96,7 +96,7 @@ def stream():
             # Client will not receive initial data, will wait for first update
 
         while True:
-            current_file_for_stream = get_dynamic_file_path()
+            current_file_for_stream = get_current_file_path()
             current_mtime = 0
             if os.path.exists(current_file_for_stream):
                 try:
@@ -127,18 +127,18 @@ def get_time_segments_from_config():
     return TIME_SEGMENTS
 
 def format_time(time_str):
-    """Convert time string to HH:MM format."""
+    """Ensure time string is in 24-hour HH:MM format."""
     try:
-        # Parse the time string and format it
+        # Parse and format in 24-hour format (HH:MM)
         time_obj = datetime.strptime(time_str, "%H:%M")
         return time_obj.strftime("%H:%M")
     except ValueError:
-        # Return original if it can't be parsed
+        # Return original if parsing fails
         return time_str
 
 def process_data_for_visual():
     """Reads and processes data from the current CSV for time series visualization using user-defined segments."""
-    current_file = get_dynamic_file_path()
+    current_file = get_current_file_path()
     labels = []
     actual_counts = []
     target_counts = []
@@ -204,14 +204,14 @@ def visual_stream():
         try:
             initial_data = process_data_for_visual()
             yield f"data: {json.dumps(initial_data)}\n\n"
-            _initial_file_path = get_dynamic_file_path()
+            _initial_file_path = get_current_file_path()
             if os.path.exists(_initial_file_path):
                 last_mtime = os.path.getmtime(_initial_file_path)
         except Exception as e:
             print(f"Error sending initial visual SSE data: {e}")
 
         while True:
-            current_file_for_stream = get_dynamic_file_path()
+            current_file_for_stream = get_current_file_path()
             current_mtime = 0
             if os.path.exists(current_file_for_stream):
                 try:
